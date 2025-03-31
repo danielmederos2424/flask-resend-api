@@ -105,9 +105,16 @@ def rate_limit(max_requests=30, window=60):
 
 # Main API route for contact form submissions
 @main_bp.route('/api/contact', methods=['POST'])
-@rate_limit(max_requests=10, window=60)  # Limit to 10 requests per minute
+@rate_limit(max_requests=10, window=60)
 def send_email():
-    """Handle contact form submissions"""
+    # Get API key
+    api_key = os.environ.get('RESEND_API_KEY')
+
+    # Check if API key is available
+    if not api_key:
+        print("ERROR: RESEND_API_KEY environment variable is not set")
+        return jsonify({"error": "API configuration error"}), 500
+
     # Get data from request
     data = request.json
 
@@ -128,8 +135,11 @@ def send_email():
         # Get email template from utils
         from app.utils import get_email_template
 
+        # Set the API key
+        print(f"Using Resend API key: {api_key[:4]}...{api_key[-4:]}")  # Log partial key for debugging
+        resend.api_key = api_key
+
         # Send email using Resend with the HTML template
-        resend.api_key = os.environ.get('RESEND_API_KEY')
         params = {
             "from": f"Contact Form <{os.environ.get('SENDER_EMAIL')}>",
             "to": [data['recipient_email']],
@@ -147,11 +157,12 @@ def send_email():
         }), 200
 
     except Exception as e:
-        # Log the error
-        print(f"Error sending email: {str(e)}")
+        # Log the error with more details
+        print(f"ERROR sending email: {str(e)}")
+        print(f"Type of error: {type(e).__name__}")
         # Return error response
         return jsonify({"error": str(e)}), 500
-
+    
 
 # Health check endpoint
 @main_bp.route('/health', methods=['GET'])
