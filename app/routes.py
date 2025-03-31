@@ -136,7 +136,6 @@ def send_email():
         from app.utils import get_email_template
 
         # Set the API key
-        print(f"Using Resend API key: {api_key[:4]}...{api_key[-4:]}")  # Log partial key for debugging
         resend.api_key = api_key
 
         # Send email using Resend with the HTML template
